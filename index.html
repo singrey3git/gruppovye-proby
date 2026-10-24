@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Групповые пробы</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@500;700&family=Golos+Text:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app">
+
+  <p id="boot" class="muted pad">Загружаем…</p>
+
+  <!-- ===== Вход преподавателя ===== -->
+  <section id="tAuth" class="start" hidden aria-labelledby="hAuth">
+    <p class="badge">Групповое тестирование</p>
+    <h1 id="hAuth">Пробы для группы</h1>
+    <p class="lead">Напишите своё имя, отправьте детям ссылку и смотрите в реальном времени, кто на какой пробе. Тесты: «Одним росчерком», «Закономерности», «Части фигуры» и «Развёртка куба».</p>
+    <p class="demo-note" data-only="demo">Демо-режим: данные хранятся только в этом браузере. Детей можно открыть прямо на странице, чтобы всё проверить. Чтобы дети заходили со своих устройств, подключите Supabase (см. README).</p>
+    <form id="authForm" class="auth-card" novalidate>
+      <div class="field">
+        <label for="aName">Ваше имя</label>
+        <input id="aName" type="text" maxlength="60" autocomplete="name" placeholder="Например, Анна Сергеевна">
+      </div>
+      <p class="form-err" id="aErr" role="alert"></p>
+      <button class="btn primary" type="submit" id="aSubmit">Войти и получить ссылку</button>
+    </form>
+    <form id="kidCodeForm" class="kid-code" novalidate>
+      <label for="kidCode">Вы ученик? Введите код от преподавателя</label>
+      <div class="row">
+        <input id="kidCode" type="text" maxlength="8" autocomplete="off" placeholder="Например, K7M2QX">
+        <button class="btn secondary" type="submit">Войти</button>
+      </div>
+      <p class="form-err" id="kidCodeErr" role="alert"></p>
+    </form>
+  </section>
+
+  <!-- ===== Сессии преподавателя ===== -->
+  <section id="tHome" hidden aria-labelledby="hHome">
+    <header class="topbar">
+      <p class="brand">Пробы для группы</p>
+      <div class="who-box"><span id="whoName"></span><button class="btn ghost small" type="button" id="logout" data-only="demo">Сменить преподавателя</button></div>
+    </header>
+    <div class="home-grid">
+      <form id="newForm" class="panel-card" novalidate>
+        <h2 id="hHome">Новый запуск</h2>
+
+        <div class="field">
+          <label for="nTitle">Название группы</label>
+          <input id="nTitle" type="text" maxlength="80">
+        </div>
+        <fieldset class="field">
+          <legend>Тесты по порядку</legend>
+          <div id="nTests"></div>
+        </fieldset>
+        <label class="check" for="nTrain"><input id="nTrain" type="checkbox" checked><span>Обучение перед тестом «Одним росчерком»<small>Квадрат и квадрат с хвостиком, с подсказкой-жестом. Результаты тоже записываются.</small></span></label>
+        <label class="check" for="nTime"><input id="nTime" type="checkbox" checked><span>Показывать детям время<small>Время считается в любом случае.</small></span></label>
+        <label class="check" for="nSound"><input id="nSound" type="checkbox" checked><span>Звуки</span></label>
+        <p class="form-err" id="nErr" role="alert"></p>
+        <button class="btn primary" type="submit" id="nStart">Начать тест и получить ссылку</button>
+      </form>
+      <div class="panel-card">
+        <h2>Прошлые запуски</h2>
+        <div id="sessList" class="sess-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Карта прохождений ===== -->
+  <section id="tSession" hidden aria-labelledby="sTitle">
+    <header class="topbar">
+      <button class="btn ghost small" type="button" id="back">← Все запуски</button>
+      <p class="live" id="live" data-st="wait"><span class="live-dot"></span><span id="liveText">подключаемся…</span></p>
+    </header>
+    <div class="sess-head">
+      <div class="sess-name">
+        <h2 id="sTitle"></h2>
+        <p class="muted"><span id="sDate"></span> · <span class="pill on" id="sStatus">вход открыт</span></p>
+        <p class="sess-tests" id="sTests"></p>
+      </div>
+      <div class="share">
+        <div class="share-code"><span class="kicker">Код</span><span class="code big" id="sCode"></span></div>
+        <div class="share-link">
+          <label class="kicker" for="sLink">Ссылка для детей</label>
+          <div class="row">
+            <input id="sLink" type="text" readonly>
+            <button class="btn primary" type="button" id="copyLink">Скопировать</button>
+          </div>
+          <p class="hint" id="copyMsg" role="status" aria-live="polite"></p>
+          <div class="row wrap">
+            <button class="btn secondary small" type="button" id="tryKid">Пройти как ребёнок</button>
+            <a class="btn ghost small" id="openTab" target="_blank" rel="noopener">Открыть ссылку в новой вкладке</a>
+            <button class="btn ghost small" type="button" id="sToggle">Закрыть вход</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <dl class="counters">
+      <div><dt>Подключились</dt><dd id="cJoined">0</dd></div>
+      <div><dt>На связи</dt><dd id="cOnline">0</dd></div>
+      <div><dt>Проходят сейчас</dt><dd id="cNow">0</dd></div>
+      <div><dt>Закончили</dt><dd id="cDone">0</dd></div>
+    </dl>
+
+    <div class="stage-bar" id="stageBar" hidden></div>
+
+    <div class="map-wrap">
+      <div class="map-scroll">
+        <table class="map" id="map">
+          <thead id="mapThead"></thead>
+          <tbody id="mapBody"></tbody>
+        </table>
+      </div>
+      <p class="map-empty" id="mapEmpty">Пока никто не подключился. Отправьте детям ссылку: как только ребёнок введёт имя, он появится здесь.</p>
+      <ul class="legend" aria-label="Обозначения">
+        <li><i class="m-ok"></i>пройдена</li>
+        <li><i class="m-bad"></i>неудачная попытка или неверный ответ</li>
+        <li><i class="m-skip"></i>пропущена</li>
+        <li><span class="lg-cur"></span>решает сейчас (для росчерка — сколько линий пройдено)</li>
+        <li><span class="lg-first"></span>с первой попытки или верный ответ</li>
+        <li><span class="lg-wrong"></span>неверный ответ</li>
+        <li class="lg-hint">Нажмите на заголовок или клетку, чтобы увидеть пробу</li>
+      </ul>
+    </div>
+
+    <div class="below">
+      <div class="panel-card">
+        <h3>Лента событий</h3>
+        <ul class="feed" id="feed"></ul>
+      </div>
+      <div class="panel-card">
+        <h3>Результаты группы</h3>
+        <p class="muted">Таблица для Excel: строка на каждую пробу каждого ребёнка, с возрастом, попытками, временем и ходом попыток.</p>
+        <div class="row wrap">
+          <button class="btn primary" type="button" id="exportBtn">Скопировать для Excel</button>
+          <button class="btn ghost" type="button" id="exportShow">Показать таблицу</button>
+        </div>
+        <p class="hint" id="exportMsg" role="status" aria-live="polite"></p>
+        <textarea id="tsv" hidden readonly aria-label="Результаты для копирования"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Экран ребёнка по ссылке ===== -->
+  <div id="kidPage" hidden></div>
+</main>
+
+<!-- Превью пробы для преподавателя -->
+<div id="pv" class="pv" hidden>
+  <div class="pv-card" role="dialog" aria-modal="true" aria-labelledby="pvTitle">
+    <header class="pv-head">
+      <div><p class="kicker" id="pvKick"></p><h3 id="pvTitle"></h3></div>
+      <button class="btn ghost small" type="button" id="pvClose">Закрыть</button>
+    </header>
+    <div class="pv-body" id="pvBody"></div>
+  </div>
+</div>
+
+<!-- Панель проверки: экран ребёнка рядом с картой -->
+<aside id="drawer" class="drawer" hidden aria-label="Экран ребёнка для проверки">
+  <div class="drawer-top">
+    <div>
+      <p class="kicker">Проверка</p>
+      <p class="drawer-title">Так видит ребёнок</p>
+    </div>
+    <button class="btn ghost small" type="button" id="drawerClose">Свернуть</button>
+  </div>
+  <div class="drawer-tabs" id="drawerTabs" role="tablist"></div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<script src="js/config.js"></script>
+<script src="js/probes.js"></script>
+<script src="js/game.js"></script>
+<script src="js/choice.js"></script>
+<script src="js/backend.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
